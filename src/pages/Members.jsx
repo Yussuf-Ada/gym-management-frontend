@@ -15,6 +15,7 @@ function Members() {
     phone: '',
     date_of_birth: '',
     emergency_contact: '',
+    profile_image: null,
     is_active: true
   })
 
@@ -27,7 +28,7 @@ function Members() {
       const response = await api.get('/members/')
       setMembers(response.data.results || response.data)
     } catch (error) {
-      console.error('Failed to fetch members:', error)
+      alert('Failed to fetch members. Please refresh the page.')
     } finally {
       setLoading(false)
     }
@@ -36,15 +37,34 @@ function Members() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      if (editingMember) {
-        await api.patch(`/members/${editingMember.id}/`, formData)
+      let data = { ...formData }
+      
+      // Handle file upload separately
+      if (formData.profile_image instanceof File) {
+        const formDataToSend = new FormData()
+        Object.keys(data).forEach(key => {
+          if (key !== 'profile_image') {
+            formDataToSend.append(key, data[key])
+          }
+        })
+        formDataToSend.append('profile_image', formData.profile_image)
+        data = formDataToSend
       } else {
-        await api.post('/members/', formData)
+        // Remove profile_image if it's null
+        delete data.profile_image
+      }
+
+      if (editingMember) {
+        await api.patch(`/members/${editingMember.id}/`, data)
+        alert('Member updated successfully!')
+      } else {
+        await api.post('/members/', data)
+        alert('Member created successfully!')
       }
       fetchMembers()
       resetForm()
     } catch (error) {
-      console.error('Failed to save member:', error)
+      alert('Failed to save member. Please check all fields and try again.')
     }
   }
 
@@ -54,7 +74,7 @@ function Members() {
         await api.delete(`/members/${id}/`)
         fetchMembers()
       } catch (error) {
-        console.error('Failed to delete member:', error)
+        alert('Failed to delete member. Please try again.')
       }
     }
   }
@@ -67,6 +87,7 @@ function Members() {
       phone: '',
       date_of_birth: '',
       emergency_contact: '',
+      profile_image: null,
       is_active: true
     })
     setEditingMember(null)
@@ -74,8 +95,7 @@ function Members() {
   }
 
   const filteredMembers = members.filter(member =>
-    member.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    member.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    member.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     member.email?.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -143,6 +163,25 @@ function Members() {
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Profile Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setFormData({...formData, profile_image: e.target.files[0]})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                {editingMember?.profile_image && (
+                  <div className="mt-2">
+                    <img 
+                      src={editingMember.profile_image} 
+                      alt="Current profile" 
+                      className="h-16 w-16 rounded-full object-cover"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Current profile image</p>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -230,12 +269,18 @@ function Members() {
               <tr key={member.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    {member.profile_image && (
+                    {member.profile_image ? (
                       <img className="h-10 w-10 rounded-full mr-3" src={member.profile_image} alt="" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full mr-3 bg-gray-200 flex items-center justify-center">
+                        <span className="text-gray-500 font-medium">
+                          {member.full_name?.charAt(0) || '?'}
+                        </span>
+                      </div>
                     )}
                     <div>
                       <div className="text-sm font-medium text-gray-900">
-                        {member.first_name} {member.last_name}
+                        {member.full_name}
                       </div>
                     </div>
                   </div>
@@ -254,12 +299,13 @@ function Members() {
                     onClick={() => {
                       setEditingMember(member)
                       setFormData({
-                        first_name: member.first_name,
-                        last_name: member.last_name,
+                        first_name: member.first_name || member.full_name?.split(' ')[0] || '',
+                        last_name: member.last_name || member.full_name?.split(' ').slice(1).join(' ') || '',
                         email: member.email,
                         phone: member.phone,
                         date_of_birth: member.date_of_birth,
                         emergency_contact: member.emergency_contact,
+                        profile_image: null, // Don't pre-fill file input
                         is_active: member.is_active
                       })
                       setShowForm(true)

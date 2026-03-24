@@ -11,12 +11,14 @@ function Classes() {
   const [showBookingForm, setShowBookingForm] = useState(false)
   const [editingClass, setEditingClass] = useState(null)
   const [selectedClass, setSelectedClass] = useState(null)
+  const [members, setMembers] = useState([])
 
   const [classForm, setClassForm] = useState({
     name: '',
     description: '',
     instructor: '',
-    schedule: '',
+    schedule_day: '',
+    schedule_time: '',
     duration_minutes: '',
     capacity: '',
     is_active: true
@@ -35,14 +37,18 @@ function Classes() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [classesRes, bookingsRes] = await Promise.all([
+      const [classesRes, bookingsRes, membersRes] = await Promise.all([
         api.get('/classes/'),
-        api.get('/classes/bookings/')
+        api.get('/bookings/'),
+        api.get('/members/')
       ])
       setClasses(classesRes.data.results || classesRes.data)
-      setBookings(bookingsRes.data.results || bookingsRes.data)
+      const bookingsData = bookingsRes.data.results || bookingsRes.data
+      setBookings(bookingsData)
+      const membersData = membersRes.data.results || membersRes.data
+      setMembers(membersData)
     } catch (error) {
-      console.error('Failed to fetch data:', error)
+      alert('Failed to fetch data. Please refresh the page.')
     } finally {
       setLoading(false)
     }
@@ -53,24 +59,26 @@ function Classes() {
     try {
       if (editingClass) {
         await api.patch(`/classes/${editingClass.id}/`, classForm)
+        alert('Class updated successfully!')
       } else {
         await api.post('/classes/', classForm)
+        alert('Class created successfully!')
       }
       fetchData()
       resetClassForm()
     } catch (error) {
-      console.error('Failed to save class:', error)
+      alert('Failed to save class. Please check all fields and try again.')
     }
   }
 
   const handleBookingSubmit = async (e) => {
     e.preventDefault()
     try {
-      await api.post('/classes/bookings/', bookingForm)
+      await api.post('/bookings/', bookingForm)
       fetchData()
       resetBookingForm()
     } catch (error) {
-      console.error('Failed to create booking:', error)
+      alert('Failed to create booking. Please try again.')
     }
   }
 
@@ -80,7 +88,7 @@ function Classes() {
         await api.delete(`/classes/${id}/`)
         fetchData()
       } catch (error) {
-        console.error('Failed to delete class:', error)
+        alert('Failed to delete class. Please try again.')
       }
     }
   }
@@ -88,10 +96,10 @@ function Classes() {
   const handleDeleteBooking = async (id) => {
     if (confirm('Are you sure you want to cancel this booking?')) {
       try {
-        await api.delete(`/classes/bookings/${id}/`)
+        await api.delete(`/bookings/${id}/`)
         fetchData()
       } catch (error) {
-        console.error('Failed to cancel booking:', error)
+        alert('Failed to cancel booking. Please try again.')
       }
     }
   }
@@ -101,7 +109,8 @@ function Classes() {
       name: '',
       description: '',
       instructor: '',
-      schedule: '',
+      schedule_day: '',
+      schedule_time: '',
       duration_minutes: '',
       capacity: '',
       is_active: true
@@ -211,11 +220,11 @@ function Classes() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        {new Date(gymClass.schedule).toLocaleDateString()}
+                        {gymClass.schedule_day.charAt(0).toUpperCase() + gymClass.schedule_day.slice(1)}
                       </div>
                       <div className="flex items-center gap-1 text-xs">
                         <Clock className="h-3 w-3" />
-                        {new Date(gymClass.schedule).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {gymClass.schedule_time}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -245,7 +254,8 @@ function Classes() {
                             name: gymClass.name,
                             description: gymClass.description,
                             instructor: gymClass.instructor,
-                            schedule: gymClass.schedule,
+                            schedule_day: gymClass.schedule_day,
+                            schedule_time: gymClass.schedule_time,
                             duration_minutes: gymClass.duration_minutes,
                             capacity: gymClass.capacity,
                             is_active: gymClass.is_active
@@ -294,16 +304,16 @@ function Classes() {
               {bookings.map((booking) => (
                 <tr key={booking.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {booking.member?.first_name} {booking.member?.last_name}
+                    {booking.member_name || 'Loading...'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {booking.gym_class?.name}
+                    {booking.class_name || 'Loading...'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(booking.booking_date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(booking.gym_class?.schedule).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    {booking.schedule_time || '--:--'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -372,12 +382,30 @@ function Classes() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Schedule</label>
-                <input
-                  type="datetime-local"
+                <label className="block text-sm font-medium text-gray-700 mb-1">Day</label>
+                <select
                   required
-                  value={classForm.schedule}
-                  onChange={(e) => setClassForm({...classForm, schedule: e.target.value})}
+                  value={classForm.schedule_day}
+                  onChange={(e) => setClassForm({...classForm, schedule_day: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Select Day</option>
+                  <option value="monday">Monday</option>
+                  <option value="tuesday">Tuesday</option>
+                  <option value="wednesday">Wednesday</option>
+                  <option value="thursday">Thursday</option>
+                  <option value="friday">Friday</option>
+                  <option value="saturday">Saturday</option>
+                  <option value="sunday">Sunday</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
+                <input
+                  type="time"
+                  required
+                  value={classForm.schedule_time}
+                  onChange={(e) => setClassForm({...classForm, schedule_time: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
@@ -452,7 +480,7 @@ function Classes() {
                   <option value="">Select Class</option>
                   {classes.filter(c => c.is_active && !isClassFull(c)).map(gymClass => (
                     <option key={gymClass.id} value={gymClass.id}>
-                      {gymClass.name} - {new Date(gymClass.schedule).toLocaleDateString()} ({getBookingCount(gymClass.id)}/{gymClass.capacity} spots)
+                      {gymClass.name} - {gymClass.schedule_day} ({getBookingCount(gymClass.id)}/{gymClass.capacity} spots)
                     </option>
                   ))}
                 </select>
@@ -466,7 +494,11 @@ function Classes() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Select Member</option>
-                  {/* This would need to fetch members list */}
+                  {members.map(member => (
+                    <option key={member.id} value={member.id}>
+                      {member.full_name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>

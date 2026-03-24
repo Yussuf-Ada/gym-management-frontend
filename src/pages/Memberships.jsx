@@ -5,6 +5,7 @@ import { Plus, Search, Edit, Trash2, CreditCard, Calendar, AlertTriangle } from 
 function Memberships() {
   const [memberships, setMemberships] = useState([])
   const [subscriptions, setSubscriptions] = useState([])
+  const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('plans')
   const [showPlanForm, setShowPlanForm] = useState(false)
@@ -33,14 +34,16 @@ function Memberships() {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const [plansRes, subsRes] = await Promise.all([
+      const [plansRes, subsRes, membersRes] = await Promise.all([
         api.get('/memberships/'),
-        api.get('/memberships/subscriptions/')
+        api.get('/subscriptions/'),
+        api.get('/members/')
       ])
       setMemberships(plansRes.data.results || plansRes.data)
       setSubscriptions(subsRes.data.results || subsRes.data)
+      setMembers(membersRes.data.results || membersRes.data)
     } catch (error) {
-      console.error('Failed to fetch data:', error)
+      alert('Failed to fetch data. Please refresh the page.')
     } finally {
       setLoading(false)
     }
@@ -51,24 +54,26 @@ function Memberships() {
     try {
       if (editingPlan) {
         await api.patch(`/memberships/${editingPlan.id}/`, planForm)
+        alert('Membership plan updated successfully!')
       } else {
         await api.post('/memberships/', planForm)
+        alert('Membership plan created successfully!')
       }
       fetchData()
       resetPlanForm()
     } catch (error) {
-      console.error('Failed to save membership plan:', error)
+      alert('Failed to save membership plan. Please try again.')
     }
   }
 
   const handleSubscriptionSubmit = async (e) => {
     e.preventDefault()
     try {
-      await api.post('/memberships/subscriptions/', subscriptionForm)
+      await api.post('/subscriptions/', subscriptionForm)
       fetchData()
       resetSubscriptionForm()
     } catch (error) {
-      console.error('Failed to create subscription:', error)
+      alert('Failed to create subscription. Please try again.')
     }
   }
 
@@ -78,7 +83,7 @@ function Memberships() {
         await api.delete(`/memberships/${id}/`)
         fetchData()
       } catch (error) {
-        console.error('Failed to delete plan:', error)
+        alert('Failed to delete plan. Please try again.')
       }
     }
   }
@@ -86,10 +91,10 @@ function Memberships() {
   const handleDeleteSubscription = async (id) => {
     if (confirm('Are you sure you want to cancel this subscription?')) {
       try {
-        await api.delete(`/memberships/subscriptions/${id}/`)
+        await api.delete(`/subscriptions/${id}/`)
         fetchData()
       } catch (error) {
-        console.error('Failed to cancel subscription:', error)
+        alert('Failed to cancel subscription. Please try again.')
       }
     }
   }
@@ -263,10 +268,10 @@ function Memberships() {
               {subscriptions.map((sub) => (
                 <tr key={sub.id}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {sub.member?.first_name} {sub.member?.last_name}
+                    {sub.member_name || 'Loading...'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {sub.membership?.name}
+                    {sub.membership_name || 'Loading...'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(sub.start_date).toLocaleDateString()}
@@ -407,7 +412,11 @@ function Memberships() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   <option value="">Select Member</option>
-                  {/* This would need to fetch members list */}
+                  {members.map(member => (
+                    <option key={member.id} value={member.id}>
+                      {member.full_name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
