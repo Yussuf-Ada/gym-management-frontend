@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { Dumbbell, ArrowLeft } from 'lucide-react'
+import api from '../services/api'
 
 function ResetPassword() {
   const [searchParams] = useSearchParams()
@@ -39,27 +40,19 @@ function ResetPassword() {
     setLoading(true)
     
     try {
-      const response = await fetch('/api/auth/password-reset/confirm/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token: token,
-          new_password: newPassword,
-          new_password_confirm: confirmPassword,
-        }),
+      const response = await api.post('/auth/password-reset/confirm/', {
+        token: token,
+        new_password: newPassword,
+        new_password_confirm: confirmPassword,
       })
       
-      const data = await response.json()
-      
-      if (response.ok) {
+      if (response.status === 200) {
         setMessage('Password reset successfully! Redirecting to login...')
         setTimeout(() => {
           navigate('/login')
         }, 2000)
       } else {
-        setError(data.error || 'Failed to reset password')
+        setError(response.data.error || 'Failed to reset password')
       }
     } catch (err) {
       setError('Failed to reset password. Please try again.')
