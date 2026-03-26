@@ -30,7 +30,9 @@ function Register() {
     setLoading(true)
     try {
       await register(formData)
-      navigate('/dashboard')
+      // Show success message and redirect to login
+      alert('Account created successfully! Please log in.')
+      navigate('/login')
     } catch (err) {
       setError(err.response?.data?.email?.[0] || err.response?.data?.password?.[0] || 'Registration failed')
     } finally {

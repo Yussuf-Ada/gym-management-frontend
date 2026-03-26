@@ -38,9 +38,7 @@ export function AuthProvider({ children }) {
 
   const register = async (data) => {
     const response = await api.post('/auth/register/', data)
-    localStorage.setItem('access_token', response.data.tokens.access)
-    localStorage.setItem('refresh_token', response.data.tokens.refresh)
-    setUser(response.data.user)
+    // Don't auto-login after registration, just return the response
     return response.data
   }
 
