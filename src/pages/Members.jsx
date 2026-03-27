@@ -41,17 +41,24 @@ function Members() {
       
       // Handle file upload separately
       if (formData.profile_image instanceof File) {
+        console.log('File detected:', formData.profile_image.name)
+        console.log('Editing member:', !!editingMember)
+        
         // First update member data without image
         delete data.profile_image
         
         if (editingMember) {
+          console.log('Updating member data...')
           await api.patch(`/members/${editingMember.id}/`, data)
           
+          console.log('Uploading image to:', `/members/${editingMember.id}/upload_image/`)
           // Then upload image separately
           const imageData = new FormData()
           imageData.append('profile_image', formData.profile_image)
           await api.post(`/members/${editingMember.id}/upload_image/`, imageData)
+          console.log('Image upload completed')
         } else {
+          console.log('Creating new member with image...')
           // For new members, include image in creation
           const formDataToSend = new FormData()
           Object.keys(data).forEach(key => {
@@ -62,6 +69,7 @@ function Members() {
           await api.post('/members/', data)
         }
       } else {
+        console.log('No file detected, updating normally...')
         // Remove profile_image if it's null
         delete data.profile_image
         
