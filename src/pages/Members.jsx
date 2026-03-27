@@ -42,7 +42,14 @@ function Members() {
       // Handle file upload separately
       if (formData.profile_image instanceof File) {
         console.log('File detected:', formData.profile_image.name)
+        console.log('File size:', formData.profile_image.size)
         console.log('Editing member:', !!editingMember)
+        
+        // Check file size (max 5MB)
+        if (formData.profile_image.size > 5 * 1024 * 1024) {
+          alert('Image too large. Please choose an image smaller than 5MB.')
+          return
+        }
         
         // First update member data without image
         delete data.profile_image
