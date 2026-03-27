@@ -41,26 +41,37 @@ function Members() {
       
       // Handle file upload separately
       if (formData.profile_image instanceof File) {
-        const formDataToSend = new FormData()
-        Object.keys(data).forEach(key => {
-          if (key !== 'profile_image') {
+        // First update member data without image
+        delete data.profile_image
+        
+        if (editingMember) {
+          await api.patch(`/members/${editingMember.id}/`, data)
+          
+          // Then upload image separately
+          const imageData = new FormData()
+          imageData.append('profile_image', formData.profile_image)
+          await api.post(`/members/${editingMember.id}/upload_image/`, imageData)
+        } else {
+          // For new members, include image in creation
+          const formDataToSend = new FormData()
+          Object.keys(data).forEach(key => {
             formDataToSend.append(key, data[key])
-          }
-        })
-        formDataToSend.append('profile_image', formData.profile_image)
-        data = formDataToSend
+          })
+          formDataToSend.append('profile_image', formData.profile_image)
+          data = formDataToSend
+          await api.post('/members/', data)
+        }
       } else {
         // Remove profile_image if it's null
         delete data.profile_image
+        
+        if (editingMember) {
+          await api.patch(`/members/${editingMember.id}/`, data)
+        } else {
+          await api.post('/members/', data)
+        }
       }
-
-      if (editingMember) {
-        await api.patch(`/members/${editingMember.id}/`, data)
-        alert('Member updated successfully!')
-      } else {
-        await api.post('/members/', data)
-        alert('Member created successfully!')
-      }
+      alert(editingMember ? 'Member updated successfully!' : 'Member created successfully!')
       fetchMembers()
       resetForm()
     } catch (error) {
