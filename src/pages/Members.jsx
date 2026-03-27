@@ -328,7 +328,7 @@ function Members() {
                         last_name: member.last_name || member.full_name?.split(' ').slice(1).join(' ') || '',
                         email: member.email,
                         phone: member.phone,
-                        date_of_birth: member.date_of_birth,
+                        date_of_birth: member.date_of_birth ? new Date(member.date_of_birth).toISOString().split('T')[0] : '',
                         emergency_contact: member.emergency_contact,
                         profile_image: null, // Don't pre-fill file input
                         is_active: member.is_active
