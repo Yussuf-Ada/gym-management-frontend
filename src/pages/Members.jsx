@@ -51,19 +51,18 @@ function Members() {
           return
         }
         
-        // First update member data without image
-        delete data.profile_image
-        
         if (editingMember) {
-          console.log('Updating member data...')
-          await api.patch(`/members/${editingMember.id}/`, data)
-          
-          console.log('Uploading image to:', `/members/${editingMember.id}/upload_image/`)
-          // Then upload image separately
-          const imageData = new FormData()
-          imageData.append('profile_image', formData.profile_image)
-          await api.post(`/members/${editingMember.id}/upload_image/`, imageData)
-          console.log('Image upload completed')
+          console.log('Updating existing member with image...')
+          // For existing members, use FormData for PATCH
+          const patchData = new FormData()
+          Object.keys(data).forEach(key => {
+            if (key !== 'profile_image') {
+              patchData.append(key, data[key])
+            }
+          })
+          patchData.append('profile_image', formData.profile_image)
+          await api.patch(`/members/${editingMember.id}/`, patchData)
+          console.log('Member updated with image')
         } else {
           console.log('Creating new member with image...')
           // For new members, include image in creation
