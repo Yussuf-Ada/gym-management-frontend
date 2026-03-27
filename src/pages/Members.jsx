@@ -172,10 +172,10 @@ function Members() {
                   onChange={(e) => setFormData({...formData, profile_image: e.target.files[0]})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
-                {editingMember?.profile_image && (
+                {editingMember?.profile_image_url && (
                   <div className="mt-2">
                     <img 
-                      src={editingMember.profile_image} 
+                      src={editingMember.profile_image_url} 
                       alt="Current profile" 
                       className="h-16 w-16 rounded-full object-cover"
                     />
@@ -269,8 +269,8 @@ function Members() {
               <tr key={member.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
-                    {member.profile_image ? (
-                      <img className="h-10 w-10 rounded-full mr-3" src={member.profile_image} alt="" />
+                    {member.profile_image_url ? (
+                      <img className="h-10 w-10 rounded-full mr-3" src={member.profile_image_url} alt="" />
                     ) : (
                       <div className="h-10 w-10 rounded-full mr-3 bg-gray-200 flex items-center justify-center">
                         <span className="text-gray-500 font-medium">
