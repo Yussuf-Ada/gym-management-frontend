@@ -41,10 +41,6 @@ function Members() {
       
       // Handle file upload separately
       if (formData.profile_image instanceof File) {
-        console.log('File detected:', formData.profile_image.name)
-        console.log('File size:', formData.profile_image.size)
-        console.log('Editing member:', !!editingMember)
-        
         // Check file size (max 5MB)
         if (formData.profile_image.size > 5 * 1024 * 1024) {
           alert('Image too large. Please choose an image smaller than 5MB.')
@@ -52,7 +48,6 @@ function Members() {
         }
         
         if (editingMember) {
-          console.log('Updating existing member with image...')
           // For existing members, use FormData for PATCH
           const patchData = new FormData()
           Object.keys(data).forEach(key => {
@@ -62,9 +57,7 @@ function Members() {
           })
           patchData.append('profile_image', formData.profile_image)
           await api.patch(`/members/${editingMember.id}/`, patchData)
-          console.log('Member updated with image')
         } else {
-          console.log('Creating new member with image...')
           // For new members, include image in creation
           const formDataToSend = new FormData()
           Object.keys(data).forEach(key => {
@@ -75,7 +68,6 @@ function Members() {
           await api.post('/members/', data)
         }
       } else {
-        console.log('No file detected, updating normally...')
         // Remove profile_image if it's null
         delete data.profile_image
         
